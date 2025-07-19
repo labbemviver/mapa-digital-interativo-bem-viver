@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Marcadores no Mapa</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+     crossorigin=""></script>
+  
+  <style>
+    #map { height: 800px; }
+  </style>
+</head>
+<body>
+  <h2 id="sheet-title"></h2>
+  <div id="map"></div>
+
+  <script>
+    // inicializa o mapa ([lat, long], zoom)
+    const map = L.map('map').setView([-15, -55], 5);
+
+    // adiciona camada base do OpenStreetMap
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(map);
+  </script>
+
+  
+  <script>
+    // busca informações da planilha
+    const apiKey = 'AIzaSyAQ9TJWCbsGG2lCt95FagqMA1mrxALsOuE';
+    const sheetId = '1gV5zQLZTe1TRvT4OO6a6DTyuVf8gI8qkctHzeJKlTeA';
+    const range = 'A:D';
+
+    fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}?fields=properties/title&key=${apiKey}`)
+      .then(response => response.json())
+      .then(data => {
+        const titulo = data.properties.title;
+        document.getElementById('sheet-title').textContent = titulo;
+      })
+      .catch(error => {
+        console.error('Erro ao buscar título da planilha:', error);
+        document.getElementById('sheet-title').textContent = 'Erro ao carregar título';
+      });
+
+    fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`)
+      .then(response => response.json())
+      .then(data => {
+        const linhas = data.values.slice(1);
+        linhas.forEach(linha => {
+          const [local, lat, lng] = linha;
+          const latitude = parseFloat(lat.replace(',', '.'));
+          const longitude = parseFloat(lng.replace(',', '.'));
+
+          if (!isNaN(latitude) && !isNaN(longitude)) {
+            L.marker([latitude, longitude])
+              .addTo(map)
+              .bindPopup(`<strong>${local}</strong>`);
+          }
+        });
+      })
+      .catch(error => {
+        console.error('Erro ao carregar dados da planilha:', error);
+      });
+  </script>
+</body>
+</html>
